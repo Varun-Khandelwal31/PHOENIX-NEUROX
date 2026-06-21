@@ -25,9 +25,10 @@ const MigrationGuide = () => {
       return;
     }
 
-    // Parse GitHub URL
-    const githubRegex = /^https?:\/\/github\.com\/([\w.-]+)\/([\w.-]+?)(\.git)?\/?$/;
-    const match = repoUrl.trim().match(githubRegex);
+    // Parse GitHub URL — strip any trailing /tree/branch, ?tab=..., or #anchor
+    const cleanUrl = repoUrl.trim().replace(/[?#].*$/, '').replace(/\/tree\/[^/]+\/?$/, '').replace(/\/$/, '');
+    const githubRegex = /^https?:\/\/github\.com\/([\w.-]+)\/([\w.-]+?)(\.git)?$/;
+    const match = cleanUrl.match(githubRegex);
     if (!match) {
       setPrError("Please enter a valid GitHub URL — e.g. https://github.com/owner/repo");
       return;
