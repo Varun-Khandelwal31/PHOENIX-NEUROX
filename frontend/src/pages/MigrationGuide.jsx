@@ -63,12 +63,19 @@ const MigrationGuide = () => {
 
     const addLog = (msg) => setScanLog(prev => [...prev, msg]);
 
+    // Build GitHub API headers — use token if available (5000 req/hr vs 60 req/hr)
+    const ghToken = import.meta.env.VITE_GITHUB_TOKEN;
+    const ghHeaders = {
+      Accept: "application/vnd.github.v3+json",
+      ...(ghToken ? { Authorization: `Bearer ${ghToken}` } : {}),
+    };
+
     try {
       // Step 1: Get repo info
       addLog(`🔍 Connecting to github.com/${owner}/${repo}...`);
       const repoInfoRes = await fetch(
         `https://api.github.com/repos/${owner}/${repo}`,
-        { headers: { Accept: "application/vnd.github.v3+json" } }
+        { headers: ghHeaders }
       );
 
       if (repoInfoRes.status === 404) {
@@ -85,12 +92,13 @@ const MigrationGuide = () => {
       const defaultBranch = branch || repoInfo.default_branch || "main";
       addLog(`✅ Repository found: ${repoInfo.full_name} (${repoInfo.stargazers_count}⭐)`);
       addLog(`📂 Default branch: ${defaultBranch} | Language: ${repoInfo.language || "Mixed"}`);
+      addLog(`🔑 API mode: ${ghToken ? "Authenticated (5000 req/hr)" : "Unauthenticated (60 req/hr)"}`);
 
       // Step 2: Get file tree
       addLog(`📁 Fetching file tree from branch "${defaultBranch}"...`);
       const treeRes = await fetch(
         `https://api.github.com/repos/${owner}/${repo}/git/trees/${defaultBranch}?recursive=1`,
-        { headers: { Accept: "application/vnd.github.v3+json" } }
+        { headers: ghHeaders }
       );
 
       if (!treeRes.ok) {
@@ -121,7 +129,7 @@ const MigrationGuide = () => {
         try {
           const contentRes = await fetch(
             `https://api.github.com/repos/${owner}/${repo}/contents/${file.path}?ref=${defaultBranch}`,
-            { headers: { Accept: "application/vnd.github.v3+json" } }
+            { headers: ghHeaders }
           );
 
           if (!contentRes.ok) continue;
